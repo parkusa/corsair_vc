@@ -1,6 +1,6 @@
 /** This file is part of Corsair simulation.
  *
- *  Copyright 2011, 2012 Finnish Meteorological Institute
+ *  Copyright 2011,2012,2015 Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -425,49 +425,49 @@ bool RestartBuilder::getInitialState(builder::ID cellOffsetStart,builder::ID cel
       attribs.clear();
       attribs.push_back(make_pair("name",*it));
       attribs.push_back(make_pair("mesh",meshName));
-      if (vlsvReader->multiReadStart("DYNAMIC",attribs) == false) {
-	 simClasses->logger << "(RESTART BUILDER) ERROR: Failed to start dynamic array '" << *it << "' multiread mode!" << endl << write;
-	 success = false;
+      if (vlsvReader->startMultiread("DYNAMIC",attribs) == false) {
+         simClasses->logger << "(RESTART BUILDER) ERROR: Failed to start dynamic array '" << *it << "' multiread mode!" << endl << write;
+         success = false;
       }
       switch (dataSize) {
        case sizeof(uint8_t):
-	 ptr8 = reinterpret_cast<uint8_t*>(buffer);
-	 for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
-	    wrapper.resize(block,ptr8[block]);
-	    arrayPtr = wrapper.data()[block];
-	    if (vlsvReader->multiReadAddUnit(ptr8[block],arrayPtr) == false) success = false;
-	 }
-	 break;
+         ptr8 = reinterpret_cast<uint8_t*>(buffer);
+         for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
+            wrapper.resize(block,ptr8[block]);
+            arrayPtr = wrapper.data()[block];
+            if (vlsvReader->addMultireadUnit(arrayPtr,ptr8[block]) == false) success = false;
+         }
+         break;
        case sizeof(uint16_t):
-	 ptr16 = reinterpret_cast<uint16_t*>(buffer);
-	 for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
-	    wrapper.resize(block,ptr16[block]);
-	    arrayPtr = wrapper.data()[block];
-	    if (vlsvReader->multiReadAddUnit(ptr16[block],arrayPtr) == false) success = false;
-	 }
-	 break;
+         ptr16 = reinterpret_cast<uint16_t*>(buffer);
+         for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
+            wrapper.resize(block,ptr16[block]);
+            arrayPtr = wrapper.data()[block];
+            if (vlsvReader->addMultireadUnit(arrayPtr,ptr16[block]) == false) success = false;
+         }
+         break;
        case sizeof(uint32_t):
-	 ptr32 = reinterpret_cast<uint32_t*>(buffer);
-	 for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
-	    wrapper.resize(block,ptr32[block]);
-	    arrayPtr = wrapper.data()[block];
-	    if (vlsvReader->multiReadAddUnit(ptr32[block],arrayPtr) == false) success = false;
-	 }
-	 break;
+         ptr32 = reinterpret_cast<uint32_t*>(buffer);
+         for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
+            wrapper.resize(block,ptr32[block]);
+            arrayPtr = wrapper.data()[block];
+            if (vlsvReader->addMultireadUnit(arrayPtr,ptr32[block]) == false) success = false;
+         }
+         break;
        case sizeof(uint64_t):
-	 ptr64 = reinterpret_cast<uint64_t*>(buffer);
-	 for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
-	    wrapper.resize(block,ptr64[block]);
-	    arrayPtr = wrapper.data()[block];
-	    if (vlsvReader->multiReadAddUnit(ptr64[block],arrayPtr) == false) success = false;
-	 }
-	 break;
+         ptr64 = reinterpret_cast<uint64_t*>(buffer);
+         for (pargrid::CellID block=0; block<simClasses->pargrid.getNumberOfLocalCells(); ++block) {
+            wrapper.resize(block,ptr64[block]);
+            arrayPtr = wrapper.data()[block];
+            if (vlsvReader->addMultireadUnit(arrayPtr,ptr64[block]) == false) success = false;
+         }
+         break;
       }
       delete [] buffer; buffer = NULL;
       
-      if (vlsvReader->multiReadEnd(elementSum) == false) {
-	 simClasses->logger << "(RESTART BUILDER) ERROR: Failed to read dynamic array '" << *it << "' !" << endl << write;
-	 success = false; break;
+      if (vlsvReader->endMultiread(elementSum) == false) {
+         simClasses->logger << "(RESTART BUILDER) ERROR: Failed to read dynamic array '" << *it << "' !" << endl << write;
+         success = false; break;
       }
    }
    return success;
