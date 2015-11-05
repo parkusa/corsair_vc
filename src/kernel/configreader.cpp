@@ -50,6 +50,14 @@ ConfigReader::~ConfigReader() {
    
 }
 
+/** Add an option whose value should be read from configuration file(s).
+ * This function will fail if an option with the same name has already been added.
+ * This function can be called on all processes, but it only does something useful
+ * at master process.
+ * @param name Name of the option.
+ * @param descr Description for the option (optional).
+ * @param defValue Default value for the option.
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const bool& defValue) {
    stringstream ss;
    ss << defValue;
@@ -63,8 +71,7 @@ bool ConfigReader::add(const string& name,const string& descr,const bool& defVal
  * @param name Name of the option.
  * @param descr Description for the option (optional).
  * @param defValue Default value for the option.
- * @return If true, option was successfully added.
- */
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const float& defValue) {
    stringstream ss;
    ss << setprecision(numeric_limits<float>::digits10+1) << defValue;
@@ -78,8 +85,7 @@ bool ConfigReader::add(const string& name,const string& descr,const float& defVa
  * @param name Name of the option.
  * @param descr Description for the option (optional).
  * @param defValue Default value for the option.
- * @return If true, option was successfully added.
- */
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const double& defValue) {
    stringstream ss;
    ss << setprecision(numeric_limits<double>::digits10+1) << defValue;
@@ -93,8 +99,7 @@ bool ConfigReader::add(const string& name,const string& descr,const double& defV
  * @param name Name of the option.
  * @param descr Description for the option (optional).
  * @param defValue Default value for the option.
- * @return If true, option was successfully added.
- */
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const int32_t& defValue) {
    stringstream ss;
    ss << defValue;
@@ -108,20 +113,35 @@ bool ConfigReader::add(const string& name,const string& descr,const int32_t& def
  * @param name Name of the option.
  * @param descr Description for the option (optional).
  * @param defValue Default value for the option.
- * @return If true, option was successfully added.
- */
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const uint32_t& defValue) {
    stringstream ss;
    ss << defValue;
    return add(name,descr,ss.str());
 }
 
+/** Add an option whose value should be read from configuration file(s).
+ * This function will fail if an option with the same name has already been added.
+ * This function can be called on all processes, but it only does something useful
+ * at master process.
+ * @param name Name of the option.
+ * @param descr Description for the option (optional).
+ * @param defValue Default value for the option.
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const int64_t& defValue) {
    stringstream ss;
    ss << defValue;
    return add(name,descr,ss.str());
 }
 
+/** Add an option whose value should be read from configuration file(s).
+ * This function will fail if an option with the same name has already been added.
+ * This function can be called on all processes, but it only does something useful
+ * at master process.
+ * @param name Name of the option.
+ * @param descr Description for the option (optional).
+ * @param defValue Default value for the option.
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const uint64_t& defValue) {
    stringstream ss;
    ss << defValue;
@@ -135,8 +155,7 @@ bool ConfigReader::add(const string& name,const string& descr,const uint64_t& de
  * @param name Name of the option.
  * @param descr Description for the option (optional).
  * @param defValue Default value for the option.
- * @return If true, option was successfully added.
- */
+ * @return If true, option was successfully added.*/
 bool ConfigReader::add(const string& name,const string& descr,const string& defValue) {
    if (initialized == false) return false;
    if (rank != masterRank) return true;
@@ -151,6 +170,13 @@ bool ConfigReader::add(const string& name,const string& descr,const string& defV
    return true;
 }
 
+/** Add a composed option whose values should be read from configuration file(s).
+ * This function will fail if an option with the same name has already been added.
+ * This function can be called by all processes, but it only has an effect on 
+ * master process.
+ * @param name Name of the option.
+ * @param descr Description for the option (optional).
+ * @return If true, composed option was successfully added.*/
 bool ConfigReader::addComposed(const string& name,const string& descr) {
    if (initialized == false) return false;
    if (rank != masterRank) return true;
@@ -162,15 +188,13 @@ bool ConfigReader::addComposed(const string& name,const string& descr) {
    // Add vector option to Boost:
    vectorOptionBroadcasted.insert(make_pair(name,false));
    descriptions->add_options()(name.c_str(),PO::value<vector<string> >(&(result.first->second))->composing(),descr.c_str());
-   //descriptions->add_options()(name.c_str(),PO::value<vector<string> >(&(result.first->second))->multitoken(),descr.c_str());
    return true;
 }
 
 /** Finalize ConfigReader. This function deallocates internal memory.
  * Calling other member functions except initialize after finalize 
  * will result in unspecified behaviour.
- * @return If true, ConfigReader was successfully finalized.
- */
+ * @return If true, ConfigReader was successfully finalized.*/
 bool ConfigReader::finalize() {
    initialized = false;
    delete descriptions; descriptions = NULL;
@@ -179,6 +203,12 @@ bool ConfigReader::finalize() {
    return true;
 }
 
+/** Get an options value. The option must have been previously added to ConfigReader by 
+ * calling one of the ConfigReader::add functions. If successful, this function will 
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param value Variable in which option's value is copied.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,bool& value) {
    string s;
    if (get(name,s) == false) return false;
@@ -187,12 +217,11 @@ bool ConfigReader::get(const string& name,bool& value) {
 }
 
 /** Get an options value. The option must have been previously added to ConfigReader by 
- * calling one of the ConfigReader::add functions. If successfull, this function will 
+ * calling one of the ConfigReader::add functions. If successful, this function will 
  * return the same value on all processes.
  * @param name Name of the option whose value is requested.
  * @param value Variable in which option's value is copied.
- * @return If true, the output value is valid.
- */
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,float& value) {
    string s;
    if (get(name,s) == false) return false;
@@ -203,12 +232,11 @@ bool ConfigReader::get(const string& name,float& value) {
 }
 
 /** Get an options value. The option must have been previously added to ConfigReader by
- * calling one of the ConfigReader::add functions. If successfull, this function will
+ * calling one of the ConfigReader::add functions. If successful, this function will
  * return the same value on all processes.
  * @param name Name of the option whose value is requested.
  * @param value Variable in which option's value is copied.
- * @return If true, the output value is valid.
- */
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,double& value) {
    string s;
    if (get(name,s) == false) return false;
@@ -219,12 +247,11 @@ bool ConfigReader::get(const string& name,double& value) {
 }
 
 /** Get an options value. The option must have been previously added to ConfigReader by
- * calling one of the ConfigReader::add functions. If successfull, this function will
+ * calling one of the ConfigReader::add functions. If successful, this function will
  * return the same value on all processes.
  * @param name Name of the option whose value is requested.
  * @param value Variable in which option's value is copied.
- * @return If true, the output value is valid.
- */
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,int32_t& value) {
    string s;
    if (get(name,s) == false) return false;
@@ -233,12 +260,11 @@ bool ConfigReader::get(const string& name,int32_t& value) {
 }
 
 /** Get an options value. The option must have been previously added to ConfigReader by
- * calling one of the ConfigReader::add functions. If successfull, this function will
+ * calling one of the ConfigReader::add functions. If successful, this function will
  * return the same value on all processes.
  * @param name Name of the option whose value is requested.
  * @param value Variable in which option's value is copied.
- * @return If true, the output value is valid.
- */
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,uint32_t& value) {
    string s;
    if (get(name,s) == false) return false;
@@ -246,6 +272,12 @@ bool ConfigReader::get(const string& name,uint32_t& value) {
    return true;
 }
 
+/** Get an options value. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param value Variable in which option's value is copied.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,int64_t& value) {
    string s;
    if (get(name,s) == false) return false;
@@ -253,6 +285,12 @@ bool ConfigReader::get(const string& name,int64_t& value) {
    return true;
 }
 
+/** Get an options value. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param value Variable in which option's value is copied.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,uint64_t& value) {
    string s;
    if (get(name,s) == false) return false;
@@ -261,12 +299,11 @@ bool ConfigReader::get(const string& name,uint64_t& value) {
 }
 
 /** Get an options value. The option must have been previously added to ConfigReader by
- * calling one of the ConfigReader::add functions. If successfull, this function will
+ * calling one of the ConfigReader::add functions. If successful, this function will
  * return the same value on all processes.
  * @param name Name of the option whose value is requested.
  * @param value Variable in which option's value is copied.
- * @return If true, the output value is valid.
- */
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,string& value) {
    // Attempt to find the requested option:
    map<string,string>::const_iterator it = options.find(name);
@@ -276,6 +313,12 @@ bool ConfigReader::get(const string& name,string& value) {
    return true;
 }
 
+/** Get all values for a composed option. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param values Vector in which option's values are copied to.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,vector<bool>& values) {
    // Attempt to find the requested option:
    map<string,vector<string> >::const_iterator it = vectorOptions.find(name);
@@ -285,7 +328,13 @@ bool ConfigReader::get(const string& name,vector<bool>& values) {
    for (size_t i=0; i<it->second.size(); ++i) values[i] = lexical_cast<bool>(it->second[i]);
    return true;
 }
-   
+
+/** Get all values for a composed option. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param values Vector in which option's values are copied to.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,vector<float>& values) {
    // Attempt to find the requested option:
    map<string,vector<string> >::const_iterator it = vectorOptions.find(name);
@@ -296,6 +345,12 @@ bool ConfigReader::get(const string& name,vector<float>& values) {
    return true;
 }
 
+/** Get all values for a composed option. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param values Vector in which option's values are copied to.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,vector<double>& values) {
    // Attempt to find the requested option:
    map<string,vector<string> >::const_iterator it = vectorOptions.find(name);
@@ -306,6 +361,12 @@ bool ConfigReader::get(const string& name,vector<double>& values) {
    return true;
 }
 
+/** Get all values for a composed option. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param values Vector in which option's values are copied to.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,vector<int32_t>& values) {
    // Attempt to find the requested option:
    map<string,vector<string> >::const_iterator it = vectorOptions.find(name);
@@ -316,6 +377,12 @@ bool ConfigReader::get(const string& name,vector<int32_t>& values) {
    return true;
 }
 
+/** Get all values for a composed option. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param values Vector in which option's values are copied to.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,vector<uint32_t>& values) {
    // Attempt to find the requested option:
    map<string,vector<string> >::const_iterator it = vectorOptions.find(name);
@@ -326,6 +393,12 @@ bool ConfigReader::get(const string& name,vector<uint32_t>& values) {
    return true;
 }
 
+/** Get all values for a composed option. The option must have been previously added to ConfigReader by
+ * calling one of the ConfigReader::add functions. If successful, this function will
+ * return the same value on all processes.
+ * @param name Name of the option whose value is requested.
+ * @param values Vector in which option's values are copied to.
+ * @return If true, the output value is valid.*/
 bool ConfigReader::get(const string& name,vector<string>& values) {
    // Attempt to find the requested option:
    map<string,vector<string> >::const_iterator it = vectorOptions.find(name);
