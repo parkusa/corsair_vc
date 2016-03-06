@@ -1,6 +1,7 @@
 /** This file is part of Corsair simulation.
  *
- *  Copyright 2011-2014 Finnish Meteorological Institute
+ *  Copyright 2011-2015 Finnish Meteorological Institute
+ *  Copyright 2016 Arto Sandroos
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -202,22 +203,22 @@ int main(int argn,char* args[]) {
       // Master process calculates a random number seed for each process:
       int* seeds = NULL;
       if (objectWrapper.sim.mpiRank == objectWrapper.sim.MASTER_RANK) {
-	 objectWrapper.simClasses.logger << "(MAIN) Master process generating random number generator seeds ";
-	 objectWrapper.simClasses.logger << " using initial seed " << randomSeed << endl;
-	 seeds = new int[objectWrapper.sim.mpiProcesses];
-	 srand(randomSeed);
-	 for (int p=0; p<objectWrapper.sim.mpiProcesses; ++p) {
-	    seeds[p] = rand();
-	    objectWrapper.simClasses.logger << "\t P#" << p << "\t seed: " << seeds[p] << endl;
-	 }
-	 objectWrapper.simClasses.logger << write;
+         objectWrapper.simClasses.logger << "(MAIN) Master process generating random number generator seeds ";
+         objectWrapper.simClasses.logger << " using initial seed " << randomSeed << endl;
+         seeds = new int[objectWrapper.sim.mpiProcesses];
+         srand(randomSeed);
+         for (int p=0; p<objectWrapper.sim.mpiProcesses; ++p) {
+            seeds[p] = rand();
+            objectWrapper.simClasses.logger << "\t P#" << p << "\t seed: " << seeds[p] << endl;
+         }
+         objectWrapper.simClasses.logger << write;
       }
       MPI_Scatter(seeds,1,MPI_Type<int>(),&randomSeed,1,MPI_Type<int>(),objectWrapper.sim.MASTER_RANK,objectWrapper.sim.comm);
-
+      
       objectWrapper.simClasses.logger << "(MAIN) Received random seed " << randomSeed << " from master process" << endl << write;
       if (objectWrapper.simClasses.random.initialize(randomSeed) == false) {
-	 objectWrapper.simClasses.logger << "(MAIN) ERROR: Failed to initialize random number generator!" << endl << write;
-	 initialized = false;
+         objectWrapper.simClasses.logger << "(MAIN) ERROR: Failed to initialize random number generator!" << endl << write;
+         initialized = false;
       }      
       delete [] seeds; seeds = NULL;
    }
@@ -365,15 +366,15 @@ int main(int argn,char* args[]) {
    if (objectWrapper.sim.dataIntervalIsTime == true) {
       objectWrapper.configReader.get("Simulation.data_save_interval",objectWrapper.sim.dataIntervalFloat);
       if (objectWrapper.sim.dataIntervalFloat != objectWrapper.sim.dataIntervalFloat) {
-	 objectWrapper.simClasses.logger << "(MAIN) ERROR: Data save interval was not given with parameter 'Simulation.data_save_interval' !" << endl;
-	 initialized = false;
+         objectWrapper.simClasses.logger << "(MAIN) ERROR: Data save interval was not given with parameter 'Simulation.data_save_interval' !" << endl;
+         initialized = false;
       }
    } else {
       objectWrapper.configReader.get("Simulation.data_save_interval",objectWrapper.sim.dataIntervalInteger);
       if (objectWrapper.sim.dataIntervalInteger > 100000) {
-	 objectWrapper.simClasses.logger << "(MAIN) ERROR: Data save interval was not given with parameter 'Simulation.data_save_interval'" << endl;
-	 objectWrapper.simClasses.logger << "\t or it has a very large value!" << endl << write;
-	 initialized = false;
+         objectWrapper.simClasses.logger << "(MAIN) ERROR: Data save interval was not given with parameter 'Simulation.data_save_interval'" << endl;
+         objectWrapper.simClasses.logger << "\t or it has a very large value!" << endl << write;
+         initialized = false;
       }
    }
    
@@ -386,10 +387,11 @@ int main(int argn,char* args[]) {
    // Call user-defined "late" initialization function:
    if (initialized == true) {
       bool status = userLateInitialization(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.configReader,
-					   objectWrapper.objectFactories,objectWrapper.particleLists);
+                                           objectWrapper.objectFactories,objectWrapper.particleLists);
       if (status == false) {
-	 objectWrapper.simClasses.logger << "(MAIN) ERROR: User-defined late initialization function failed " << endl;
-	 objectWrapper.simClasses.logger << "              on one or more MPI process" << endl << write;
+         objectWrapper.simClasses.logger << "(MAIN) ERROR: User-defined late initialization function failed " << endl;
+         objectWrapper.simClasses.logger << "              on one or more MPI process" << endl << write;
+         initialized = false;
       }
    }
    
@@ -397,10 +399,10 @@ int main(int argn,char* args[]) {
    if (initialized == true && objectWrapper.sim.restarted == true) {
       objectWrapper.simClasses.logger << "(MAIN) Updating particle lists after restart" << endl << write;
       for (size_t plist=0; plist<objectWrapper.particleLists.size(); ++plist) {
-	 if (objectWrapper.particleLists[plist]->updateAfterRepartition() == false) {
-	    objectWrapper.simClasses.logger << "(MAIN) Particle list failed to update after restart" << endl << write;
-	    initialized = false;
-	 }
+         if (objectWrapper.particleLists[plist]->updateAfterRepartition() == false) {
+            objectWrapper.simClasses.logger << "(MAIN) Particle list failed to update after restart" << endl << write;
+            initialized = false;
+         }
       }
    }
 
@@ -423,10 +425,12 @@ int main(int argn,char* args[]) {
       objectWrapper.simClasses.logger << "(MAIN) Initialization completed." << endl << write;
    } else {
       objectWrapper.simClasses.logger << "(MAIN) Initialization failed, exiting!" << endl << write;
-      cerr << endl << "One or more ERRORS occurred during initialization, aborting." << endl << endl;
-      cerr << "Here are configuration file parameters read by this compilation of CORSAIR." << endl;
-      cerr << "Check logfile for specific error(s) that were encountered durint init." << endl;
-      objectWrapper.configReader.printHelpMessage();
+      if (objectWrapper.sim.mpiRank == objectWrapper.sim.MASTER_RANK) {
+         cerr << endl << "One or more ERRORS occurred during initialization, aborting." << endl << endl;
+         cerr << "Here are configuration file parameters read by this compilation of CORSAIR." << endl;
+         cerr << "Check logfile for specific error(s) that were encountered durint init." << endl << endl;
+         objectWrapper.configReader.printHelpMessage();
+      }
    }
    // Stop profiling of corsair initialization:
    #if PROFILE_LEVEL > 0
@@ -435,12 +439,12 @@ int main(int argn,char* args[]) {
    #endif
 
    // Run test suite:
-   if (objectWrapper.sim.runTests == true) {
+   if (initialized == true && objectWrapper.sim.runTests == true) {
       objectWrapper.simClasses.logger << "(MAIN) Starting to run test suite" << endl << write;
       if (userRunTests(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.particleLists) == false) {
-	 objectWrapper.simClasses.logger << "(MAIN) WARNING: User test suite failed" << endl << write;
+         objectWrapper.simClasses.logger << "(MAIN) WARNING: User test suite failed" << endl << write;
       } else {
-	 objectWrapper.simClasses.logger << "(MAIN) Test suite run successfully" << endl << write;
+         objectWrapper.simClasses.logger << "(MAIN) Test suite run successfully" << endl << write;
       }
    }      
    #if PROFILE_LEVEL > 0
@@ -465,145 +469,130 @@ int main(int argn,char* args[]) {
       
       fstream loads("timeseries_loads.txt", fstream::out);
       if (objectWrapper.sim.mpiRank == objectWrapper.sim.MASTER_RANK) 
-	loads << "#step load(min) load(max) load(avg) imbalance_ratio" << endl;
+        loads << "#step load(min) load(max) load(avg) imbalance_ratio" << endl;
       
       objectWrapper.simClasses.logger << "(MAIN) Starting to run simulation" << endl << write;
       while (continueSimulation(objectWrapper.sim) == true) {
-	 // If partitioning is checked on this time step, set objectWrapper.sim.countPropagTime to true:
-	 if (objectWrapper.sim.repartitionCheckInterval > 0) {
-	    if ((objectWrapper.sim.timestep+1) % objectWrapper.sim.repartitionCheckInterval == 0) {
-	       objectWrapper.sim.countPropagTime = true;
-	       objectWrapper.simClasses.pargrid.clearCellWeights();
-	    }
-	 }
+         // If partitioning is checked on this time step, set objectWrapper.sim.countPropagTime to true:
+         if (objectWrapper.sim.repartitionCheckInterval > 0) {
+            if ((objectWrapper.sim.timestep+1) % objectWrapper.sim.repartitionCheckInterval == 0) {
+               objectWrapper.sim.countPropagTime = true;
+               objectWrapper.simClasses.pargrid.clearCellWeights();
+            }
+         }
 
-	 // If data is saved on this time step, set objectWrapper.sim.atDataSaveStep to true:
-	 objectWrapper.sim.atDataSaveStep = false;
-	 if (objectWrapper.sim.dataIntervalIsTime == true) {
-	    if ((objectWrapper.sim.t + objectWrapper.sim.dt) > objectWrapper.sim.t_previousDataSave + objectWrapper.sim.dataIntervalFloat) {
-	       objectWrapper.sim.atDataSaveStep = true;
-	       objectWrapper.sim.t_previousDataSave = objectWrapper.sim.t + objectWrapper.sim.dt;
-	    }
-	 } else {
-	    if ((objectWrapper.sim.timestep+1) % objectWrapper.sim.dataIntervalInteger == 0) {
-	       objectWrapper.sim.atDataSaveStep = true;
-	    }
-	 }
+         // If data is saved on this time step, set objectWrapper.sim.atDataSaveStep to true:
+         objectWrapper.sim.atDataSaveStep = false;
+         if (objectWrapper.sim.dataIntervalIsTime == true) {
+            if ((objectWrapper.sim.t + objectWrapper.sim.dt) > objectWrapper.sim.t_previousDataSave + objectWrapper.sim.dataIntervalFloat) {
+               objectWrapper.sim.atDataSaveStep = true;
+               objectWrapper.sim.t_previousDataSave = objectWrapper.sim.t + objectWrapper.sim.dt;
+            }
+         } else {
+            if ((objectWrapper.sim.timestep+1) % objectWrapper.sim.dataIntervalInteger == 0) {
+               objectWrapper.sim.atDataSaveStep = true;
+            }
+         }
+         
+         // Check if restart file should be written:
+         if (objectWrapper.sim.restartWriteInterval > 0 && objectWrapper.sim.timestep != objectWrapper.sim.restartTimestep) {
+            if (objectWrapper.sim.timestep % objectWrapper.sim.restartWriteInterval == 0 || objectWrapper.sim.timestep == 0) {
+               objectWrapper.simClasses.logger << "(MAIN) Writing restart file..." << endl << write;
+               if (writeRestart(objectWrapper.sim,objectWrapper.simClasses) == false) {
+                  objectWrapper.simClasses.logger << "(MAIN) Failed to write restart file!" << endl << write;
+               }
+            }
+         }
+
+         // Call user-defined propagation function:
+         #if PROFILE_LEVEL > 0
+            profile::start("corsair/propagation",profilePropagID);
+         #endif
+
+         if (propagate(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.particleLists) == false) {
+            objectWrapper.simClasses.logger << "(MAIN) ERROR: User-defined propagate-function returned value 'false', exiting." << endl << write;
+            initialized = false;
+            break;
+         }
+
+         #if PROFILE_LEVEL > 0
+            profile::stop();
+         #endif
 	 
-	 // Check if restart file should be written:
-	 if (objectWrapper.sim.restartWriteInterval > 0 && objectWrapper.sim.timestep != objectWrapper.sim.restartTimestep) {
-	    if (objectWrapper.sim.timestep % objectWrapper.sim.restartWriteInterval == 0 || objectWrapper.sim.timestep == 0) {
-	       objectWrapper.simClasses.logger << "(MAIN) Writing restart file..." << endl << write;
-	       if (writeRestart(objectWrapper.sim,objectWrapper.simClasses) == false) {
-		  objectWrapper.simClasses.logger << "(MAIN) Failed to write restart file!" << endl << write;
-	       }
-	    }
-	 }
-	 
-	 // Call user-defined propagation function:
-	 #if PROFILE_LEVEL > 0
-	    profile::start("corsair/propagation",profilePropagID);
-	 #endif
-
-	 if (propagate(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.particleLists) == false) {
-	    objectWrapper.simClasses.logger << "(MAIN) ERROR: User-defined propagate-function returned value 'false', exiting." << endl << write;
-	    initialized = false;
-	    break;
-	 }
-
-	 #if PROFILE_LEVEL > 0
-	    profile::stop();
-	 #endif
-	 
-	 ++objectWrapper.sim.timestep;
-	 objectWrapper.sim.t += objectWrapper.sim.dt;
-
-	 if (objectWrapper.sim.atDataSaveStep == true || continueSimulation(objectWrapper.sim) == false) {
+         ++objectWrapper.sim.timestep;
+         objectWrapper.sim.t += objectWrapper.sim.dt;
+         
+         if (objectWrapper.sim.atDataSaveStep == true || continueSimulation(objectWrapper.sim) == false) {
             #if PROFILE_LEVEL > 0
-	       profile::start("corsair/save",profileSaveID);
+               profile::start("corsair/save",profileSaveID);
             #endif
-	    
-	    saveState(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.dataOperatorContainer,objectWrapper.particleLists,builder);
-	                      
+
+            saveState(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.dataOperatorContainer,objectWrapper.particleLists,builder);
+
             #if PROFILE_LEVEL > 0
-	       profile::stop();
+               profile::stop();
             #endif
-	 }
+         }
 	 
-	 
-	 // Check if new partitioning should be calculated:
-	 objectWrapper.sim.meshRepartitioned = false;
-	 if (objectWrapper.sim.repartitionCheckInterval > 0 && objectWrapper.sim.mpiProcesses > 1) {
-	    if (objectWrapper.sim.timestep % objectWrapper.sim.repartitionCheckInterval == 0) {
-	       #if PROFILE_LEVEL > 0
-	          profile::start("corsair/repartition check",profileRepartitionID);
-	       #endif
-	       
-	       objectWrapper.simClasses.logger << "(MAIN) Testing for repartitioning at time step " << objectWrapper.sim.timestep;
-	       objectWrapper.simClasses.logger << " time " << objectWrapper.sim.t << endl;
-
-	       // Evaluate computational load:
-	       corsair::ComputationalLoad compuLoad;
-	       corsair::evaluateComputationalLoad(objectWrapper,compuLoad);
-
-	       // Write statistics of computational load to time series file (master process only):
-	       if (objectWrapper.sim.mpiRank == objectWrapper.sim.MASTER_RANK) {
-		  loads << objectWrapper.sim.timestep << '\t'; 
-		  
-		  // Write min,max,avg,imbalance ratio:
-		  loads << compuLoad.loadMin[corsair::compuload::SECONDS_PER_CELL] << '\t';
-		  loads << compuLoad.loadMax[corsair::compuload::SECONDS_PER_CELL] << '\t';
-		  loads << compuLoad.loadAvg[corsair::compuload::SECONDS_PER_CELL] << '\t';
-		  loads << compuLoad.ratios[corsair::compuload::SECONDS_PER_CELL] << '\t';
-		  
-		  // Write min,max,avg number of particles and imbalance ratio:
-		  loads << compuLoad.loadMin[corsair::compuload::N_PARTICLES] << '\t';
-		  loads << compuLoad.loadMax[corsair::compuload::N_PARTICLES] << '\t';
-		  loads << compuLoad.loadAvg[corsair::compuload::N_PARTICLES] << '\t';
-		  loads << compuLoad.ratios[corsair::compuload::N_PARTICLES] << '\t';
-		  loads << endl;
-	       }
-
-	       #if PROFILE_LEVEL > 0
-	          profile::stop();
+         // Check if new partitioning should be calculated:
+         objectWrapper.sim.meshRepartitioned = false;
+         if (objectWrapper.sim.repartitionCheckInterval > 0 && objectWrapper.sim.mpiProcesses > 1) {
+            if (objectWrapper.sim.timestep % objectWrapper.sim.repartitionCheckInterval == 0) {
+	           #if PROFILE_LEVEL > 0
+                  profile::start("corsair/repartition check",profileRepartitionID);
                #endif
 	       
-	       // If current imbalance ratio exceeds maximum tolerance, repartition mesh:
-	       if (compuLoad.ratios[corsair::compuload::SECONDS_PER_CELL] >= objectWrapper.sim.maximumLoadImbalance) {
-		  objectWrapper.simClasses.logger << "\t Repartitioning mesh at time step " << objectWrapper.sim.timestep << endl << write;
-		  if (objectWrapper.simClasses.pargrid.balanceLoad() == false) {
-		     objectWrapper.simClasses.logger << "(MAIN) Load Balancing failed!" << endl << write;
-		     //initialized = false;
-		  }
+               objectWrapper.simClasses.logger << "(MAIN) Testing for repartitioning at time step " << objectWrapper.sim.timestep;
+               objectWrapper.simClasses.logger << " time " << objectWrapper.sim.t << endl;
 
-		  // Set variable values to reflect the state of newly repartitioned simulation mesh:
-		  objectWrapper.sim.meshChangedStep   = objectWrapper.sim.timestep;
-		  objectWrapper.sim.meshRepartitioned = true;
-		  
-		  // Ask particle lists to update their internal state:
-		  for (size_t plist=0; plist<objectWrapper.particleLists.size(); ++plist) {
-		     if (objectWrapper.particleLists[plist]->updateAfterRepartition() == false) {
-			objectWrapper.simClasses.logger << "(MAIN) Particle list failed to update after repartition" << endl << write;
-			initialized = false;
-		     }
-		  }
-	       }
-	       objectWrapper.sim.countPropagTime   = false;
-	    }
-	 }
-	 /*
-	 // Save data if necessary:
-	 if (objectWrapper.sim.atDataSaveStep == true || continueSimulation(objectWrapper.sim) == false) {
-            #if PROFILE_LEVEL > 0
-	       profile::start("corsair/save",profileSaveID);
-            #endif
-	    
-	    saveState(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.dataOperatorContainer,objectWrapper.particleLists,builder);
-	  
-            #if PROFILE_LEVEL > 0
-	       profile::stop();
-            #endif
-	 }*/
+               // Evaluate computational load:
+               corsair::ComputationalLoad compuLoad;
+               corsair::evaluateComputationalLoad(objectWrapper,compuLoad);
+               
+               // Write statistics of computational load to time series file (master process only):
+               if (objectWrapper.sim.mpiRank == objectWrapper.sim.MASTER_RANK) {
+                  loads << objectWrapper.sim.timestep << '\t'; 
+                  
+                  // Write min,max,avg,imbalance ratio:
+                  loads << compuLoad.loadMin[corsair::compuload::SECONDS_PER_CELL] << '\t';
+                  loads << compuLoad.loadMax[corsair::compuload::SECONDS_PER_CELL] << '\t';
+                  loads << compuLoad.loadAvg[corsair::compuload::SECONDS_PER_CELL] << '\t';
+                  loads << compuLoad.ratios[corsair::compuload::SECONDS_PER_CELL] << '\t';
+                  
+                  // Write min,max,avg number of particles and imbalance ratio:
+                  loads << compuLoad.loadMin[corsair::compuload::N_PARTICLES] << '\t';
+                  loads << compuLoad.loadMax[corsair::compuload::N_PARTICLES] << '\t';
+                  loads << compuLoad.loadAvg[corsair::compuload::N_PARTICLES] << '\t';
+                  loads << compuLoad.ratios[corsair::compuload::N_PARTICLES] << '\t';
+                  loads << endl;
+               }
+
+               #if PROFILE_LEVEL > 0
+                  profile::stop();
+               #endif
+	       
+               // If current imbalance ratio exceeds maximum tolerance, repartition mesh:
+               if (compuLoad.ratios[corsair::compuload::SECONDS_PER_CELL] >= objectWrapper.sim.maximumLoadImbalance) {
+                  objectWrapper.simClasses.logger << "\t Repartitioning mesh at time step " << objectWrapper.sim.timestep << endl << write;
+                  if (objectWrapper.simClasses.pargrid.balanceLoad() == false) {
+                     objectWrapper.simClasses.logger << "(MAIN) Load Balancing failed!" << endl << write;
+                  }
+
+                  // Set variable values to reflect the state of newly repartitioned simulation mesh:
+                  objectWrapper.sim.meshChangedStep   = objectWrapper.sim.timestep;
+                  objectWrapper.sim.meshRepartitioned = true;
+                  
+                  // Ask particle lists to update their internal state:
+                  for (size_t plist=0; plist<objectWrapper.particleLists.size(); ++plist) {
+                     if (objectWrapper.particleLists[plist]->updateAfterRepartition() == false) {
+                        objectWrapper.simClasses.logger << "(MAIN) Particle list failed to update after repartition" << endl << write;
+                        initialized = false;
+                     }
+                  }
+               }
+               objectWrapper.sim.countPropagTime   = false;
+            }
+         }
       }
       loads.close();
    }

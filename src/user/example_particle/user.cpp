@@ -1,6 +1,7 @@
 /** This file is part of Corsair simulation.
  *
- *  Copyright 2011-2013 Finnish Meteorological Institute
+ *  Copyright 2011-2015 Finnish Meteorological Institute
+ *  Copyright 2016 Arto Sandroos
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -108,7 +109,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* data = simClasses.pargrid.getUserDataStatic<Real>(SimControl::densityDataID);
    for (pargrid::CellID blockLID=0; blockLID<simClasses.pargrid.getNumberOfAllCells(); ++blockLID) {
       for (int i=0; i<block::SIZE; ++i) {
-	 data[blockLID*block::SIZE+i] = 0.0;
+         data[blockLID*block::SIZE+i] = 0.0;
       }
    }
    

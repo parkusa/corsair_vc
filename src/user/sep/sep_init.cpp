@@ -361,12 +361,13 @@ namespace sep {
       // Get electromagnetic field functions and initialize them:
       if (sep::getObjectWrapper().fieldsContainer.getField(simControl.fieldFunctionName,simControl.fieldsFinalize,simControl.fieldsGetFields,
 							   simControl.fieldsGetPlasmaState,simControl.fieldsGetState,simControl.fieldsInitialize) == false) {
-	 simClasses.logger << "(SEP LATE INIT) ERROR: Failed to get EM field functions." << endl << write;
-	 success = false;
-      }
-      if ((*simControl.fieldsInitialize)(sim,simClasses,cr) == false) {
-	 simClasses.logger << "(SEP LATE INIT) ERROR: EM field failed to initialize." << endl << write;
-	 success = false;
+         simClasses.logger << "(SEP LATE INIT) ERROR: Failed to get EM field functions." << endl << write;
+         success = false;
+      } else {
+         if ((*simControl.fieldsInitialize)(sim,simClasses,cr) == false) {
+            simClasses.logger << "(SEP LATE INIT) ERROR: EM field failed to initialize." << endl << write;
+            success = false;
+         }
       }
       
       // ************************************** //
