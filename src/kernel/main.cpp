@@ -41,8 +41,8 @@
 using namespace std;
 
 const int MASTER_RANK = 0;
-
 static corsair::ObjectWrapper objectWrapper;
+const string logFileName = "logfile.txt";
 
 bool continueSimulation(Simulation& sim) {
    bool cont = true;
@@ -102,9 +102,15 @@ void corsair::evaluateComputationalLoad(corsair::ObjectWrapper& owrapper,corsair
    owrapper.simClasses.logger << write;
 }
 
+bool checkFileExists(const string fileName) {
+   bool rvalue = false;
+   ifstream ifs(fileName.c_str(),ifstream::in);
+   if (ifs.good() == true) { rvalue = true; }
+   return rvalue;
+}
+
 int main(int argn,char* args[]) {
    bool initialized = true;
-   
    MPI_Init(&argn,&args);
    if (objectWrapper.sim.initialize(argn,args) == false) initialized = false;
    MPI_Comm_dup(MPI_COMM_WORLD,&objectWrapper.sim.comm);
@@ -117,13 +123,27 @@ int main(int argn,char* args[]) {
    int profileMainLoopID = -1;
    int profileRepartitionID = -1;
    int profileTestsID = -1;
-   
+
+   // Do not start if a log file exists already:
+   int logFileExists = 0;
+   if (objectWrapper.sim.mpiRank == objectWrapper.sim.MASTER_RANK) {
+      if (checkFileExists(logFileName) == true) {
+	 logFileExists = 1;
+	 cerr << "(MAIN) Log file (" << logFileName << ") exist already, exiting.." << endl << flush;
+      }
+   }
+   MPI_Bcast(&logFileExists,1,MPI_Type<int>(),objectWrapper.sim.MASTER_RANK,objectWrapper.sim.comm);
+   if (logFileExists == 1) {
+      MPI_Finalize();
+      return 0;
+   }
+
    #if PROFILE_LEVEL > 0
       profile::start("corsair/initialization",profileInitID);
    #endif
 
    // Open a log file:
-   objectWrapper.simClasses.logger.open(objectWrapper.sim.comm,objectWrapper.sim.MASTER_RANK,"logfile.txt",true);
+   objectWrapper.simClasses.logger.open(objectWrapper.sim.comm,objectWrapper.sim.MASTER_RANK,logFileName,true);
    objectWrapper.simClasses.logger << "(MAIN) Corsair starting initialisation." << endl << write;
    objectWrapper.simClasses.logger << "\t Using " << objectWrapper.sim.mpiProcesses << " MPI processes and ";
    #ifndef _OPENMP
