@@ -167,6 +167,7 @@ int main(int argn,char* args[]) {
    objectWrapper.configReader.add("Simulation.dt","Time step (float).",(Real)1.0);
    objectWrapper.configReader.add("Simulation.data_save_interval_unit","Unit in which 'data_save_interval' is given (time/timestep) (string).",string(""));
    objectWrapper.configReader.add("Simulation.data_save_interval","Interval between data saves (int or float).",NaN);
+   objectWrapper.configReader.add("Simulation.data_save_initial_state","Save initial state (yes or no).",string("yes"));
    objectWrapper.configReader.add("Simulation.restart_write_interval","Interval, in time steps, between restart file writes. Defaults to zero value, i.e. restart files are not written (int).",0);
    objectWrapper.configReader.add("Simulation.random_number_generator.seed","Seed value for random number generator, with value zero it is calculated from system clock (int).",(int)0);
    objectWrapper.configReader.addComposed("LoadBalance.methods","Load balancing method for each hierarchical level (NONE / BLOCK / RANDOM / RCB / RIB / GRAPH / HYPERGRAPH).");
@@ -397,7 +398,11 @@ int main(int argn,char* args[]) {
          initialized = false;
       }
    }
-   
+
+   // Read if output file should be save after initialization
+   string dataSaveInitial = "yes";
+   objectWrapper.configReader.get("Simulation.data_save_initial_state",dataSaveInitial);
+
    // Read if mesh should be written to every VLSV file:
    string meshAlwaysWritten;
    objectWrapper.sim.meshAlwaysWritten = false;
@@ -477,15 +482,17 @@ int main(int argn,char* args[]) {
       objectWrapper.sim.countPropagTime = false;
       objectWrapper.simClasses.pargrid.setPartitioningMode(pargrid::repartition);
 
+      if(dataSaveInitial == "yes") {
       #if PROFILE_LEVEL > 0
-         profile::start("corsair/save",profileSaveID);
+	  profile::start("corsair/save",profileSaveID);
       #endif
-      objectWrapper.simClasses.logger << "(MAIN) Saving initial state" << endl << write;
-      saveState(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.dataOperatorContainer,objectWrapper.particleLists,builder);
-
+	  objectWrapper.simClasses.logger << "(MAIN) Saving initial state" << endl << write;
+	  saveState(objectWrapper.sim,objectWrapper.simClasses,objectWrapper.dataOperatorContainer,objectWrapper.particleLists,builder);
+      
       #if PROFILE_LEVEL > 0
-         profile::stop();
+	  profile::stop();
       #endif
+      }
       
       fstream loads("timeseries_loads.txt", fstream::out);
       if (objectWrapper.sim.mpiRank == objectWrapper.sim.MASTER_RANK) 
