@@ -42,6 +42,7 @@ namespace constants {
    const double PERMEABILITY = 1.25663706e-6;       /**< Permeability of free space, unit kg m / C^2.*/
    const double PERMITTIVITY = 8.85418782e-12;      /**< Permittivity of free space, unit s^4 A^2 / (kg m^3).*/ 
    const double SPEED_LIGHT = 299792458.0;          /**< Speed of light, unit m / s.*/
+   const double EV_TO_KELVIN = 11604.5250061657;    /**< Electron volt to kelvin conversion factor, K/eV */
 }
 
 class Constants {
