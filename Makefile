@@ -3,7 +3,7 @@
 ####################################################
 
 # Set default architecture, can be overwritten by command line argument
-ARCH ?= arto
+ARCH ?= alpine
 include Makefile.${ARCH}
 
 # Set default archiver, can also be set in Makefile.arch
@@ -11,7 +11,7 @@ AR ?= ar
 
 # Default project, can be set in Makefile.arch or overwritten
 # by command line argument
-SIM ?= example_particle
+SIM ?= rhybrid
 
 # Add src/user/SIM directory into include paths
 INCS=-I${CURDIR}/src/user/${SIM}

@@ -1,0 +1,41 @@
+###                                                          ###
+### THIS IS AN EXAMPLE OF AN ARCHITECTURE-DEPENDENT MAKEFILE ###
+###                                                          ###
+###   Make a copy of this file for your personal use and     ###
+###       adjust the include and library paths below         ###
+
+# C++ compiler and flags
+CMP=mpic++
+CXXFLAGS=-O3 -Wall -DPROFILE
+MATHFLAGS=-ffast-math -funroll-loops
+
+# Archiver
+AR = ar
+
+# Linker and flags
+LNK=mpic++
+
+# Default project (set to "example_particle" in Makefile)
+#SIM=
+
+###### include and library paths #####
+
+# Miscellaneous files:
+#INC=-I/home/sandroos/codes/util
+
+# Boost
+INC_BOOST=-I$(BOOST_ROOT)/include
+LIB_BOOST=-L$(BOOST_ROOT)/lib -lboost_program_options
+
+# ParGrid (no LIB)
+INC_PARGRID=-I$(BUILD_ROOT)/pargrid-master
+LIB_PARGRID=
+
+# VLSV file format
+INC_VLSV=-I$(BUILD_ROOT)/vlsv-master
+LIB_VLSV=-L$(BUILD_ROOT)/vlsv-master -lvlsv
+
+# Zoltan
+INC_ZOLTAN=-I$(BUILD_ROOT)/Zoltan_v3.6/build/include
+LIB_ZOLTAN=-L $(BUILD_ROOT)/Zoltan_v3.6/build/lib -lzoltan
+
