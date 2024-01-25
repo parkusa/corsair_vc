@@ -3,7 +3,7 @@
 ####################################################
 
 # Set default architecture, can be overwritten by command line argument
-ARCH ?= alpine
+ARCH ?= now
 include Makefile.${ARCH}
 
 # Set default archiver, can also be set in Makefile.arch
