@@ -6,7 +6,7 @@
 
 # C++ compiler and flags
 CMP=mpic++
-CXXFLAGS=-O3 -Wall -DPROFILE
+CXXFLAGS=-O3 -Wall -DPROFILE -DNDEBUG
 MATHFLAGS=-ffast-math -funroll-loops
 
 # Archiver
